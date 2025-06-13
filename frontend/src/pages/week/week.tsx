@@ -66,19 +66,21 @@ const WeekColumn: React.FC<WeekColumnProps> = ({ selectedDate, onDateSelect, sel
 
   return (
     <div className="column">
+      <div className="column-header">
+        <span className="column-title">{format(weekStart, 'LLLL')}</span>
+        <button
+          className="column-add-btn"
+          onClick={goToToday}
+          aria-label="Go to today"
+        >
+          Today
+        </button>
+      </div>
       <div className="flex-row" style={{ alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div className="flex-row gap" style={{ alignItems: 'center' }}>
           <Button onClick={goToPrevWeek} className="btn"><ArrowBackIcon /></Button>
-          <span className="header-md">{format(weekStart, 'LLLL')}</span>
           <Button onClick={goToNextWeek} className="btn"><ArrowForwardIcon /></Button>
         </div>
-        <Button
-          className="btn btn-primary"
-          startIcon={<TodayIcon />}
-          onClick={goToToday}
-        >
-          Today
-        </Button>
       </div>
       <div className="flex-row gap" style={{ marginBottom: 8 }}>
         {weekDays.map(({ date, isSelected, isToday, isFuture }) => (

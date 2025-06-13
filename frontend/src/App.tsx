@@ -3,7 +3,6 @@ import DashboardColumn from './pages/dashboard/dashboard'
 import ProjectColumn from './pages/project/project'
 import PlanFactColumns from "./pages/planner/planner"
 import WeekColumn from './pages/week/week'
-import './App.css'
 import { Button } from '@mui/material'
 import axios from 'axios'
 

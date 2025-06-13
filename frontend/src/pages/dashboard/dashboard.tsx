@@ -47,27 +47,26 @@ const DashboardColumn: React.FC<DashboardProps> = ({ selectedProjectId, selected
 
   return (
     <div className="column">
-      <div className="header-lg">Dashboard</div>
+      <div className="column-header">
+        <span className="column-title">Dashboard</span>
+      </div>
       <div className="flex-row gap" style={{ justifyContent: 'space-between', flexWrap: 'nowrap' }}>
         {/* Today Card */}
         <div className="card" style={{ flex: 1 }}>
-          <div className="header-md">Today</div>
-          <div className="divider" />
-          <div className="text-main text-bold">{stats.dayXP} <span className="text-sub">XP</span></div>
+          <div className="column-title">Today</div>
+          <div className="text-main text-bold dashboard-stats">{stats.dayXP} <span className="text-sub">XP</span></div>
           <div className="text-sub">Best: {bestXP} XP <span role="img" aria-label="fire">🔥</span></div>
         </div>
         {/* Tracked Time Card */}
         <div className="card" style={{ flex: 1 }}>
-          <div className="header-md">Tracked time</div>
-          <div className="divider" />
-          <div className="text-main text-bold">{stats.actual_duration}m</div>
+          <div className="column-title">Tracked time</div>
+          <div className="text-main text-bold dashboard-stats">{stats.actual_duration}<span className="text-sub"> m</span></div>
           <div className="text-sub">Best: {bestTime}m <span role="img" aria-label="fire">🔥</span></div>
         </div>
         {/* Streak Card */}
         <div className="card" style={{ flex: 1 }}>
-          <div className="header-md">Streak</div>
-          <div className="divider" />
-          <div className="text-main text-bold"><span role="img" aria-label="fire">🔥</span> {stats.streak} days</div>
+          <div className="column-title">Streak</div>
+          <div className="text-main text-bold dashboard-stats"><span role="img" aria-label="fire">🔥</span> {stats.streak} <span className="text-sub">days</span></div>
           <div className="text-sub">Best: 0 days <span role="img" aria-label="fire">🔥</span></div>
         </div>
       </div>

@@ -106,16 +106,15 @@ const ProjectColumn: React.FC<ProjectProps> = ({ onProjectSelect, selectedProjec
 
   return (
     <div className="column">
-      <div className="flex-row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h2 className="header-lg">Projects</h2>
-        <Button
-          className="btn btn-primary"
-          startIcon={<AddIcon />}
+      <div className="column-header">
+        <span className="column-title">Projects</span>
+        <button
+          className="column-add-btn"
           onClick={() => setOpen(true)}
           aria-label="Add new project"
         >
           Add Project
-        </Button>
+        </button>
       </div>
       <div className="item-list gap">
         {isLoading ? (
@@ -129,21 +128,19 @@ const ProjectColumn: React.FC<ProjectProps> = ({ onProjectSelect, selectedProjec
             return (
               <div
                 key={project.id}
-                className={`item card ${project.id === selectedProjectId ? 'selected' : ''}`}
+                className={`item card ${project.id === selectedProjectId ? 'selected' : ''} ${systemProjectIds.includes(project.id) ? 'system' : ''} project-item`}
                 onClick={() => handleProjectClick(project.id)}
                 onDoubleClick={() => handleProjectDoubleClick(project.id)}
                 tabIndex={0}
-                style={{ cursor: systemProjectIds.includes(project.id) ? 'default' : 'pointer' }}
               >
-                <div className="flex-row" style={{ justifyContent: 'space-between', alignItems: 'center', fontWeight: 600, fontSize: 20 }}>
+                <div className="project-item-header">
                   <span className="text-bold">{project.name}</span>
                   <span className="text-sub">Level {project.current_level}</span>
                 </div>
-                <div className="divider" />
-                <div style={{ margin: '8px 0', height: 8, background: '#eee', borderRadius: 6, overflow: 'hidden' }}>
-                  <div style={{ width: `${progress * 100}%`, height: '100%', background: '#111', borderRadius: 6, transition: 'width 0.3s' }} />
+                <div className="project-progress-container">
+                  <div className="project-progress-bar" style={{ width: `${progress * 100}%` }} />
                 </div>
-                <div className="flex-row" style={{ justifyContent: 'flex-end', alignItems: 'center' }}>
+                <div className="project-xp">
                   <span className="text-sub">{project.current_xp} / {nextLevelXP} XP</span>
                 </div>
               </div>
