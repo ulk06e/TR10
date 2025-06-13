@@ -339,7 +339,6 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
       };
       
       console.log('Task data:', taskData);
-      alert(JSON.stringify(taskData, null, 2));
       
       console.log('Updating items state');
       setItems(prevItems => {
@@ -410,7 +409,9 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
           ) : error ? (
             <div className="text-main text-sub">{error}</div>
           ) : (
-            sortedItems.map((item, index) => (
+            sortedItems
+              .filter(item => item.column_origin === 'plan')
+              .map((item, index) => (
               <TaskCard
                 key={item.id}
                 className="item card"
