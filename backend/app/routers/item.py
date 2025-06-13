@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
-from typing import List
+from typing import List, Dict, Any
 import uuid
 from datetime import datetime
 
 from ..database import get_db
-from ..models.item import Item
+from ..models.item import Item, TimeQuality, ColumnOrigin
 from ..models.project import Project
 from ..schemas.item import Item as ItemSchema, ItemCreate
 
@@ -44,9 +44,72 @@ async def get_items(project_id: str, day_id: str, db: AsyncSession = Depends(get
     items = result.scalars().all()
     return items
 
+@router.put("/{item_id}", response_model=ItemSchema)
+async def update_item(item_id: str, item_update: Dict[str, Any], db: AsyncSession = Depends(get_db)):
+    """Update an item"""
+    try:
+        # Find the item
+        query = select(Item).where(Item.id == item_id)
+        result = await db.execute(query)
+        db_item = result.scalar_one_or_none()
+        
+        if not db_item:
+            raise HTTPException(status_code=404, detail="Item not found")
+        
+        # Update only allowed fields
+        allowed_fields = {
+            'completed', 'actual_duration', 'time_quality', 
+            'completed_time', 'column_origin'
+        }
+        
+        for key, value in item_update.items():
+            if key in allowed_fields:
+                if key == 'time_quality':
+                    value = TimeQuality(value)
+                elif key == 'column_origin':
+                    value = ColumnOrigin(value)
+                elif key == 'completed_time' and value:
+                    value = datetime.fromisoformat(value.replace('Z', '+00:00'))
+                setattr(db_item, key, value)
+        
+        await db.commit()
+        await db.refresh(db_item)
+        return db_item
+        
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.delete('/clean')
 async def clean_db(db: AsyncSession = Depends(get_db)):
-    await db.execute(delete(Item))
-    await db.execute(delete(Project))
-    await db.commit()
-    return {"message": "Database cleaned"} 
+    try:
+        # Delete all items
+        await db.execute(delete(Item))
+        # Delete all projects
+        await db.execute(delete(Project))
+        await db.commit()
+        return {"message": "Database cleaned successfully"}
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.delete("/{item_id}")
+async def delete_item(item_id: str, db: AsyncSession = Depends(get_db)):
+    """Delete an item by ID"""
+    try:
+        # Find the item
+        query = select(Item).where(Item.id == item_id)
+        result = await db.execute(query)
+        db_item = result.scalar_one_or_none()
+        
+        if not db_item:
+            raise HTTPException(status_code=404, detail="Item not found")
+        
+        # Delete the item
+        await db.delete(db_item)
+        await db.commit()
+        return {"message": "Item deleted successfully"}
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e)) 

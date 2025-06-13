@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Select, MenuItem, FormControl, InputLabel, Popover } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Select, MenuItem, FormControl, InputLabel, Popover, styled } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
@@ -31,6 +31,46 @@ interface PlannerProps {
   selectedDate: Date;
 }
 
+const TaskCard = styled('div')(({ theme }) => ({
+  border: '1px solid #e5e5e5',
+  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+  cursor: 'pointer',
+  transition: 'box-shadow 0.2s ease-in-out',
+  '&:hover': {
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)',
+  }
+}));
+
+const ActionButton = styled(Button)(({ theme }) => ({
+  background: '#f7f6f3',
+  color: '#2c2c2c',
+  borderRadius: '6px',
+  fontWeight: 500,
+  fontSize: '0.9rem',
+  boxShadow: 'none',
+  padding: '0.5rem 1rem',
+  textTransform: 'none',
+  border: 'none',
+  '&:hover': {
+    background: '#f0efeb',
+  }
+}));
+
+const DeleteButton = styled(ActionButton)({
+  color: '#e03e3e',
+  '&:hover': {
+    background: '#f0efeb',
+  }
+});
+
+const StartButton = styled(ActionButton)({
+  background: '#2c2c2c',
+  color: '#fff',
+  '&:hover': {
+    background: '#1a1a1a',
+  }
+});
+
 const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) => {
   const [items, setItems] = useState<Item[]>([]);
   const [open, setOpen] = useState(false);
@@ -53,6 +93,9 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
   const [isTimerNegative, setIsTimerNegative] = useState(false);
   const [timerInterval, setTimerInterval] = useState<NodeJS.Timeout | null>(null);
   const [lastTaskEndTime, setLastTaskEndTime] = useState<Date | null>(null);
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+  const [elapsedTime, setElapsedTime] = useState(0);
+  const [startTime, setStartTime] = useState<Date | null>(null);
 
   useEffect(() => {
     fetchItems();
@@ -113,8 +156,11 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
     try {
       await axios.delete('http://localhost:8000/clean');
       setItems([]);
-    } catch (error) {
-      alert('Failed to clean DB');
+      setError(null);
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to clean DB';
+      setError(errorMessage);
+      alert(`Failed to clean DB: ${errorMessage}`);
     }
   };
 
@@ -142,8 +188,11 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
       await axios.delete(`http://localhost:8000/items/${selectedTask.id}`);
       setItems(items.filter(item => item.id !== selectedTask.id));
       handleTaskPopupClose();
-    } catch (error) {
-      setError('Failed to delete task');
+      setError(null);
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to delete task';
+      setError(errorMessage);
+      alert(`Failed to delete task: ${errorMessage}`);
     }
   };
 
@@ -170,17 +219,29 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
       });
       setItems(items.map(item => item.id === selectedTask.id ? response.data : item));
       setEditDialogOpen(false);
-    } catch (error) {
-      setError('Failed to update task');
+      setError(null);
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to update task';
+      setError(errorMessage);
+      alert(`Failed to update task: ${errorMessage}`);
     }
   };
 
   const handleStartTimer = () => {
-    if (!selectedTask) return;
+    console.log('Start timer clicked');
+    if (!selectedTask) {
+      console.log('No selected task');
+      return;
+    }
+    
+    console.log('Starting timer for task:', selectedTask);
     setTimerSeconds(selectedTask.estimated_minutes * 60);
     setIsTimerNegative(false);
     setIsTimerPaused(false);
     setTimerOpen(true);
+    setActiveTaskId(selectedTask.id);
+    setElapsedTime(0);
+    setStartTime(new Date());
     handleTaskPopupClose();
 
     const interval = setInterval(() => {
@@ -191,8 +252,10 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
         }
         return prev - 1;
       });
+      setElapsedTime(prev => prev + 1);
     }, 1000);
 
+    console.log('Setting timer interval');
     setTimerInterval(interval);
   };
 
@@ -213,6 +276,7 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
           }
           return prev - 1;
         });
+        setElapsedTime(prev => prev + 1);
       }, 1000);
       setTimerInterval(interval);
       setIsTimerPaused(false);
@@ -220,33 +284,90 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
   };
 
   const handleFinishTimer = async () => {
-    if (!selectedTask || !timerInterval) return;
-    clearInterval(timerInterval);
+    console.log('Finish timer clicked');
+    console.log('Active task ID:', activeTaskId);
+    console.log('Timer interval:', timerInterval);
     
-    const actualDuration = Math.abs(timerSeconds);
+    if (!activeTaskId) {
+      console.log('No active task ID');
+      return;
+    }
+
+    // Find the task in the items array
+    const taskToComplete = items.find(item => item.id === activeTaskId);
+    if (!taskToComplete) {
+      console.log('Task not found in items array');
+      return;
+    }
+    
+    if (timerInterval) {
+      console.log('Clearing interval');
+      clearInterval(timerInterval);
+    }
+    
+    // Use elapsed time instead of timer seconds for actual duration
+    const actualDuration = Math.ceil(elapsedTime / 60); // Convert seconds to minutes and round up
     const timeQuality = isTimerPaused ? 'not-pure' : 'pure';
     
+    console.log('Timer data:', {
+      actualDuration,
+      timeQuality,
+      elapsedTime,
+      isTimerPaused
+    });
+    
     try {
-      const response = await axios.put(`http://localhost:8000/items/${selectedTask.id}`, {
+      console.log('Sending request to update task');
+      const response = await axios.put(`http://localhost:8000/items/${activeTaskId}`, {
         completed: true,
         actual_duration: actualDuration,
-        time_quality,
+        time_quality: timeQuality,
         completed_time: new Date().toISOString(),
         column_origin: 'fact'
       });
+      
+      console.log('Server response:', response.data);
 
-      setItems(prevItems => prevItems.map(item => 
-        item.id === selectedTask.id ? response.data : item
-      ));
-
+      // Show task data in alert
+      const taskData = {
+        description: taskToComplete.description,
+        estimated_time: taskToComplete.estimated_minutes,
+        actual_time: actualDuration,
+        time_quality: timeQuality,
+        completed_at: new Date().toISOString(),
+        time_difference: actualDuration - taskToComplete.estimated_minutes
+      };
+      
+      console.log('Task data:', taskData);
+      alert(JSON.stringify(taskData, null, 2));
+      
+      console.log('Updating items state');
+      setItems(prevItems => {
+        // First, remove the task from the plan column
+        const itemsWithoutCompletedTask = prevItems.filter(item => item.id !== activeTaskId);
+        
+        // Then, add the completed task (with updated data from server) to the fact column
+        // The response.data contains the updated task with column_origin set to 'fact'
+        const updatedItems = [response.data, ...itemsWithoutCompletedTask];
+        
+        return updatedItems;
+      });
+      
+      console.log('Cleaning up timer states');
+      // Cleanup timer states
       setTimerOpen(false);
       setTimerSeconds(0);
       setIsTimerPaused(false);
       setIsTimerNegative(false);
       setTimerInterval(null);
-      setSelectedTask(null);
-    } catch (error) {
-      setError('Failed to complete task');
+      setActiveTaskId(null);
+      
+      console.log('Timer cleanup complete');
+    } catch (error: any) {
+      console.error('Error completing task:', error);
+      const errorMessage = error.response?.data?.detail || error.message || 'Failed to complete task';
+      setError(errorMessage);
+      alert(`Failed to complete task: ${errorMessage}`);
     }
   };
 
@@ -285,24 +406,22 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
         </div>
         <div className="item-list gap">
           {isLoading ? (
-            <div className="text-main">Loading tasks...</div>
+            <div className="text-main"></div>
           ) : error ? (
             <div className="text-main text-sub">{error}</div>
           ) : (
             sortedItems.map((item, index) => (
-              <div
+              <TaskCard
                 key={item.id}
                 className="item card"
                 onClick={(e) => handleTaskClick(e, item)}
                 style={{ 
                   border: index === 0 ? '2px solid #111' : '1px solid #e5e5e5',
-                  boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                  cursor: 'pointer'
                 }}
               >
                 <div className="text-main text-bold">#{item.priority} - {item.task_quality} : {item.description}</div>
                 <div className="text-sub" style={{ marginTop: 8 }}>{item.estimated_minutes}m</div>
-              </div>
+              </TaskCard>
             ))
           )}
         </div>
@@ -316,6 +435,7 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
         <div className="item-list gap">
           {items
             .filter(item => item.column_origin === 'fact')
+            .sort((a, b) => new Date(b.completed_time!).getTime() - new Date(a.completed_time!).getTime())
             .map((item, index) => (
               <div
                 key={item.id}
@@ -326,14 +446,17 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
                   backgroundColor: item.time_quality === 'pure' ? '#e8f5e9' : 'white'
                 }}
               >
-                <div className="text-main text-bold">{item.description}</div>
+                <div className="text-main text-bold">#{item.priority} - {item.task_quality} : {item.description}</div>
                 <div className="text-sub">
-                  {item.actual_duration}m / {item.estimated_minutes}m - {new Date(item.completed_time!).toLocaleTimeString()}
-                  {item.time_quality === 'not-pure' && (
+                  {item.actual_duration}m / {item.estimated_minutes}m - {new Date(item.completed_time!).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  {item.time_quality === 'not-pure' && item.actual_duration && (
                     <span style={{ color: 'red', marginLeft: '8px' }}>
                       (Unaccounted time: {item.actual_duration - item.estimated_minutes}m)
                     </span>
                   )}
+                  <div style={{ marginTop: '4px', color: '#4CAF50' }}>
+                    +{item.xp_value} XP
+                  </div>
                 </div>
               </div>
             ))}
@@ -353,29 +476,34 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
           vertical: 'top',
           horizontal: 'center',
         }}
+        PaperProps={{
+          style: {
+            borderRadius: '8px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+            padding: '8px',
+            background: '#fff',
+          }
+        }}
       >
-        <div style={{ padding: '8px', display: 'flex', gap: '8px' }}>
-          <Button
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <DeleteButton
             startIcon={<DeleteIcon />}
             onClick={handleDeleteTask}
-            className="btn btn-danger"
           >
             Delete
-          </Button>
-          <Button
+          </DeleteButton>
+          <ActionButton
             startIcon={<EditIcon />}
             onClick={handleEditTask}
-            className="btn"
           >
             Edit
-          </Button>
-          <Button
+          </ActionButton>
+          <StartButton
             startIcon={<PlayArrowIcon />}
             onClick={handleStartTimer}
-            className="btn btn-primary"
           >
             Start
-          </Button>
+          </StartButton>
         </div>
       </Popover>
 
@@ -439,26 +567,70 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
         </DialogActions>
       </Dialog>
 
-      {/* Timer Dialog */}
-      <Dialog open={timerOpen} onClose={() => {}}>
-        <DialogTitle>Task Timer</DialogTitle>
-        <DialogContent>
-          <div style={{ 
-            textAlign: 'center', 
-            fontSize: '2rem', 
-            fontFamily: 'monospace',
-            color: isTimerNegative ? 'red' : 'inherit',
-            margin: '1rem 0'
+      {/* Timer Dialog - Notion style */}
+      <Dialog open={timerOpen} onClose={() => {}} PaperProps={{
+        style: {
+          borderRadius: '16px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+          minWidth: 340,
+          padding: '0 0 1.5rem 0',
+          background: '#fff',
+        }
+      }}>
+        <DialogTitle style={{
+          fontWeight: 600,
+          fontSize: '1.2rem',
+          borderBottom: '1px solid #f0f0f0',
+          padding: '1.2rem 1.5rem 0.7rem 1.5rem',
+          letterSpacing: 0.1,
+        }}>
+          Task Timer
+        </DialogTitle>
+        <DialogContent style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '2rem 1.5rem 1rem 1.5rem',
+        }}>
+          <div style={{
+            textAlign: 'center',
+            fontSize: '3.2rem',
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+            color: isTimerNegative ? '#e03e3e' : '#2c2c2c',
+            background: '#f7f6f3',
+            borderRadius: '12px',
+            padding: '0.9rem 2.2rem',
+            marginBottom: '1.5rem',
+            minWidth: '220px',
+            boxShadow: isTimerNegative ? '0 0 0 2px #e03e3e' : '0 0 0 1.5px #e0e0e0',
+            transition: 'box-shadow 0.2s',
+            letterSpacing: '0.04em',
           }}>
             {formatTimer(timerSeconds)}
           </div>
         </DialogContent>
-        <DialogActions>
+        <DialogActions style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '1.2rem',
+          padding: '0 0 1.5rem 0',
+        }}>
           {isTimerPaused ? (
             <Button
               startIcon={<PlayArrowIcon />}
               onClick={handleContinueTimer}
-              className="btn btn-primary"
+              style={{
+                background: '#f7f6f3',
+                color: '#2c2c2c',
+                borderRadius: '8px',
+                fontWeight: 500,
+                fontSize: '1.08rem',
+                boxShadow: 'none',
+                padding: '0.6rem 1.4rem',
+                textTransform: 'none',
+                border: 'none',
+              }}
             >
               Continue
             </Button>
@@ -466,7 +638,17 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
             <Button
               startIcon={<PauseIcon />}
               onClick={handlePauseTimer}
-              className="btn"
+              style={{
+                background: '#f7f6f3',
+                color: '#2c2c2c',
+                borderRadius: '8px',
+                fontWeight: 500,
+                fontSize: '1.08rem',
+                boxShadow: 'none',
+                padding: '0.6rem 1.4rem',
+                textTransform: 'none',
+                border: 'none',
+              }}
             >
               Pause
             </Button>
@@ -474,7 +656,17 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
           <Button
             startIcon={<StopIcon />}
             onClick={handleFinishTimer}
-            className="btn btn-primary"
+            style={{
+              background: '#2c2c2c',
+              color: '#fff',
+              borderRadius: '8px',
+              fontWeight: 500,
+              fontSize: '1.08rem',
+              boxShadow: 'none',
+              padding: '0.6rem 1.4rem',
+              textTransform: 'none',
+              border: 'none',
+            }}
           >
             Finish
           </Button>
