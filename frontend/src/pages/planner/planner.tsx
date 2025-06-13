@@ -49,7 +49,6 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
       const dayId = selectedDate.toISOString().split('T')[0];
       let projectId = selectedProjectId;
       if (projectId === 'all_projects') {
-        // Fetch all items for the day
         const response = await axios.get('http://localhost:8000/items', {
           params: { project_id: '', day_id: dayId }
         });
@@ -61,7 +60,6 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
         setItems(response.data);
       }
     } catch (error) {
-      console.error('Error fetching items:', error);
       setError('Failed to fetch tasks');
     } finally {
       setIsLoading(false);
@@ -93,7 +91,6 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
       setOpen(false);
       setDescription('');
     } catch (error) {
-      console.error('Error adding task:', error);
       setError('Failed to add task');
     }
   };
@@ -117,49 +114,47 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
   const planItems = items.filter(item => item.column_origin === 'plan');
 
   return (
-    <div className="planner-container">
-      <div className="columns-container">
-        {/* Plan Column */}
-        <div className="column">
-          <div className="column-header">
-            <h2 className="column-title">Plan</h2>
-            <Button
-              variant="contained"
-              startIcon={<AddIcon />}
-              onClick={() => setOpen(true)}
-              aria-label="Add new task"
-            >
-              Add Item
-            </Button>
-          </div>
-          <div className="item-list">
-            {isLoading ? (
-              <div>Loading tasks...</div>
-            ) : error ? (
-              <div className="error-message">{error}</div>
-            ) : (
-              planItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="item"
-                  style={{ border: '2px solid #222', borderRadius: '12px', padding: '16px', marginBottom: '12px', fontSize: '1.1em' }}
-                >
-                  <div><b>#{item.priority}</b> - {item.task_quality} : {item.description}</div>
-                  <div style={{ marginTop: '8px', color: '#666' }}>{item.estimated_minutes}m</div>
-                </div>
-              ))
-            )}
-          </div>
+    <div className="flex-row gap" style={{ width: '100%' }}>
+      {/* Plan Column */}
+      <div className="column" style={{ flex: 1 }}>
+        <div className="flex-row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h2 className="header-lg">Plan</h2>
+          <Button
+            className="btn btn-primary"
+            startIcon={<AddIcon />}
+            onClick={() => setOpen(true)}
+            aria-label="Add new task"
+          >
+            Add Item
+          </Button>
         </div>
+        <div className="item-list gap">
+          {isLoading ? (
+            <div className="text-main">Loading tasks...</div>
+          ) : error ? (
+            <div className="text-main text-sub">{error}</div>
+          ) : (
+            planItems.map((item) => (
+              <div
+                key={item.id}
+                className="item card"
+                style={{ border: '2px solid #222' }}
+              >
+                <div className="text-main text-bold">#{item.priority} - {item.task_quality} : {item.description}</div>
+                <div className="text-sub" style={{ marginTop: 8 }}>{item.estimated_minutes}m</div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
 
-        {/* Fact Column */}
-        <div className="column">
-          <div className="column-header">
-            <h2 className="column-title">Fact</h2>
-          </div>
-          <div className="item-list">
-            {/* Fact items can be shown here if needed */}
-          </div>
+      {/* Fact Column */}
+      <div className="column" style={{ flex: 1 }}>
+        <div className="flex-row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <h2 className="header-lg">Fact</h2>
+        </div>
+        <div className="item-list gap">
+          {/* Fact items can be shown here if needed */}
         </div>
       </div>
 
@@ -168,7 +163,7 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
         onClose={handleClose}
         aria-labelledby="add-task-dialog-title"
       >
-        <DialogTitle id="add-task-dialog-title">Add New Task</DialogTitle>
+        <DialogTitle>Add New Task</DialogTitle>
         <DialogContent>
           <TextField
             autoFocus
@@ -229,11 +224,10 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
+          <Button onClick={handleClose} className="btn">Cancel</Button>
           <Button 
             onClick={handleAddItem} 
-            variant="contained" 
-            color="primary"
+            className="btn btn-primary"
             disabled={!description.trim()}
           >
             Add
@@ -242,11 +236,7 @@ const Planner: React.FC<PlannerProps> = ({ selectedProjectId, selectedDate }) =>
       </Dialog>
 
       {/* Clean DB Button */}
-      <div style={{ marginTop: '2rem', textAlign: 'center' }}>
-        <Button variant="outlined" color="error" onClick={handleCleanDB}>
-          Clean DB
-        </Button>
-      </div>
+
     </div>
   );
 };

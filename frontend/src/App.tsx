@@ -27,19 +27,15 @@ function App() {
   return (
     <div className="app-container" style={{ background: '#fafafa', minHeight: '100vh', padding: 32 }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 32, alignItems: 'center', justifyContent: 'center', maxWidth: 1200, margin: '0 auto' }}>
+      <DashboardColumn 
+          selectedProjectId={selectedProjectId}
+          selectedDate={selectedDate}
+        />
         <ProjectColumn 
           onProjectSelect={setSelectedProjectId}
           selectedProjectId={selectedProjectId}
         />
-        <DashboardColumn 
-          selectedProjectId={selectedProjectId}
-          selectedDate={selectedDate}
-        />
-        <WeekColumn 
-          onDateSelect={setSelectedDate}
-          selectedDate={selectedDate}
-          selectedProjectId={selectedProjectId}
-        />
+
         <div style={{ display: 'flex', flexDirection: 'row', gap: 24, width: '100%', alignItems: 'flex-start', justifyContent: 'center' }}>
           <div style={{ flex: 1, minWidth: 350 }}>
             <PlanFactColumns 
@@ -48,6 +44,11 @@ function App() {
             />
           </div>
         </div>
+        <WeekColumn 
+          onDateSelect={setSelectedDate}
+          selectedDate={selectedDate}
+          selectedProjectId={selectedProjectId}
+        />
         <div style={{ textAlign: 'center', marginTop: 24 }}>
           <Button variant="outlined" color="error" onClick={handleCleanDB} disabled={cleaning}>
             {cleaning ? 'Cleaning...' : 'Clean DB'}

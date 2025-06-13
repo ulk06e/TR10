@@ -65,53 +65,51 @@ const WeekColumn: React.FC<WeekColumnProps> = ({ selectedDate, onDateSelect, sel
   };
 
   return (
-    <div className="column" style={{ background: '#fff', color: '#111', border: '1px solid #ccc', minWidth: 350, margin: '32px 0' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Button onClick={goToPrevWeek} style={{ minWidth: 32, color: '#111' }}><ArrowBackIcon /></Button>
-          <span style={{ fontWeight: 600, fontSize: 22 }}>{format(weekStart, 'LLLL')}</span>
-          <Button onClick={goToNextWeek} style={{ minWidth: 32, color: '#111' }}><ArrowForwardIcon /></Button>
+    <div className="column">
+      <div className="flex-row" style={{ alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+        <div className="flex-row gap" style={{ alignItems: 'center' }}>
+          <Button onClick={goToPrevWeek} className="btn"><ArrowBackIcon /></Button>
+          <span className="header-md">{format(weekStart, 'LLLL')}</span>
+          <Button onClick={goToNextWeek} className="btn"><ArrowForwardIcon /></Button>
         </div>
         <Button
-          variant="contained"
+          className="btn btn-primary"
           startIcon={<TodayIcon />}
           onClick={goToToday}
-          style={{ background: '#222', color: '#fff', borderRadius: 8, fontWeight: 500 }}
         >
           Today
         </Button>
       </div>
-      <div style={{ display: 'flex', gap: 16, justifyContent: 'space-between', marginBottom: 8 }}>
+      <div className="flex-row gap" style={{ marginBottom: 8 }}>
         {weekDays.map(({ date, isSelected, isToday, isFuture }) => (
           <div
             key={date.toISOString()}
             onClick={() => !isFuture && onDateSelect(date)}
+            className="card flex-center"
             style={{
-              flex: 1,
-              minWidth: 120,
               background: isSelected ? '#111' : isFuture ? '#fbeaea' : '#fafafa',
               color: isSelected ? '#fff' : '#111',
-              borderRadius: 12,
               border: isSelected ? '2px solid #111' : '1.5px solid #e5e5e5',
               boxShadow: isSelected ? '0 0 0 2px #b3b3b3' : 'none',
-              padding: '16px 8px',
-              textAlign: 'center',
               cursor: isFuture ? 'not-allowed' : 'pointer',
               opacity: isFuture ? 0.7 : 1,
-              transition: 'all 0.2s',
+              minWidth: 120,
+              flex: 1,
+              padding: '16px 8px',
               marginBottom: 0
             }}
           >
-            <div style={{ fontWeight: 600, fontSize: 17 }}>{format(date, 'EEEE')}</div>
-            <div style={{ color: isSelected ? '#fff' : '#888', fontWeight: 400, fontSize: 15 }}>{format(date, 'MMM d')}</div>
+            <div className="text-bold" style={{ fontSize: 17 }}>{format(date, 'EEEE')}</div>
+            <div className="text-sub">{format(date, 'MMM d')}</div>
           </div>
         ))}
       </div>
-      <div style={{ display: 'flex', gap: 16, justifyContent: 'space-between', marginTop: 8 }}>
+      <div className="flex-row gap" style={{ marginTop: 8 }}>
         {weekDays.map(({ date }) => (
           <div
             key={date.toISOString() + '-planned'}
-            style={{ flex: 1, minWidth: 120, textAlign: 'center', color: '#888', fontStyle: 'italic', fontSize: 15 }}
+            className="text-sub flex-center"
+            style={{ fontStyle: 'italic', minWidth: 120, flex: 1 }}
           >
             {plannedMinutes[format(date, 'yyyy-MM-dd')] || 0}m planned
           </div>
