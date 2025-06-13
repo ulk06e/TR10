@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import planner, project, stats
+from .routers import planner, project, stats, item
 from .database import engine, Base
 
 app = FastAPI()
@@ -18,6 +18,7 @@ app.add_middleware(
 app.include_router(planner.router)
 app.include_router(project.router)
 app.include_router(stats.router)
+app.include_router(item.router)
 
 # Create database tables
 @app.on_event("startup")
